@@ -1,69 +1,84 @@
-# React + TypeScript + Vite
+# Elysium Mind
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Graphical Task Manager — React + Node.js
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Overview
 
-## Expanding the ESLint configuration
+Elysium Mind is a visual task management application that lets you create, organize, and link tasks as graphical modules. The interface is modern (Chakra UI, dark mode), and data is persisted via a Node.js/Express API.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React + Vite + Chakra UI + React Flow
+- **Backend**: Node.js + Express (REST API)
+- **Monorepo**: Everything in a single repository
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## Project Structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+Elysium-mind/
+├── backend/      # Node.js/Express API
+│   └── index.js
+├── frontend/     # React (Vite) application
+│   └── src/
+├── .gitignore
+├── LICENSE
+├── README.md
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Installation
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Clone the repository
+```sh
+git clone https://github.com/<your-username>/Elysium-mind.git
+cd Elysium-mind
 ```
+
+### 2. Install dependencies
+
+#### Backend
+```sh
+cd backend
+npm install
+```
+
+#### Frontend
+```sh
+cd ../frontend
+npm install
+```
+
+---
+
+## Running the Project
+
+### 1. Start the backend (API)
+```sh
+cd backend
+node index.js
+```
+The server runs at http://localhost:3001
+
+### 2. Start the frontend (React)
+```sh
+cd frontend
+npm run dev
+```
+Open your browser at the indicated URL (e.g., http://localhost:5173)
+
+---
+
+## Main Features
+- Add, edit, and delete tasks
+- Graphical visualization (drag & drop, links between tasks)
+- Status, priority, and checkbox for each task
+- Modern dark mode interface (Chakra UI)
+- Data persistence via Node.js API
+
+---
+
+## License
+MIT — see the LICENSE file
