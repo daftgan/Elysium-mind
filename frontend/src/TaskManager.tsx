@@ -210,14 +210,33 @@ export default function TaskManager() {
 
   return (
     <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
-      <Flex as="header" align="center" bg="gray.800" px={6} py={3} boxShadow="md" position="absolute" top={0} left={0} w="100vw" zIndex={2}>
-        <Heading as="h1" size="md" color="teal.200">Elysium Mind</Heading>
+      <Flex as="header" align="center" bg="gray.800" px={4} py={1} boxShadow="md" position="absolute" top={0} left={0} w="100vw" zIndex={2} h="44px">
+        <Box as="span" mr={2} display="flex" alignItems="center">
+          {/* Brain flat design SVG icon */}
+          <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="20" cy="32" rx="16" ry="20" fill="#90cdf4"/>
+            <ellipse cx="44" cy="32" rx="16" ry="20" fill="#b794f4"/>
+            <ellipse cx="32" cy="32" rx="18" ry="22" fill="#a0aec0" fillOpacity="0.5"/>
+            <ellipse cx="32" cy="32" rx="14" ry="18" fill="#f7fafc" fillOpacity="0.7"/>
+            <path d="M32 14C28 14 28 22 32 22C36 22 36 14 32 14Z" fill="#805ad5"/>
+            <path d="M32 50C28 50 28 42 32 42C36 42 36 50 32 50Z" fill="#3182ce"/>
+          </svg>
+        </Box>
+        <Heading
+          as="h1"
+          size="sm"
+          fontWeight="bold"
+          bgGradient="linear(to-r, blue.300, purple.400)"
+          bgClip="text"
+        >
+          Elysium Mind
+        </Heading>
         <Spacer />
         <IconButton
-          aria-label="Ajouter une tâche"
-          icon={<AddIcon />}
+          aria-label="Add task"
+          icon={<AddIcon boxSize={3} />}
           colorScheme="teal"
-          size="md"
+          size="xs"
           onClick={addTask}
         />
       </Flex>
