@@ -1,0 +1,241 @@
+import React, { useCallback, useEffect } from "react";
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  addEdge,
+  useNodesState,
+  useEdgesState,
+} from "reactflow";
+import type { Node, Edge } from "reactflow";
+import "reactflow/dist/style.css";
+import {
+  Box,
+  Button,
+  Input,
+  Select,
+  useColorModeValue,
+  IconButton,
+  HStack,
+  VStack,
+  Text,
+  useToast,
+  Checkbox,
+  Flex,
+  Spacer,
+  Heading,
+} from "@chakra-ui/react";
+import { CloseIcon, AddIcon } from "@chakra-ui/icons";
+
+const statusOptions = ["À faire", "En cours", "Terminée"];
+const priorityOptions = ["Basse", "Moyenne", "Haute"];
+
+const API_URL = "http://localhost:3001";
+
+function TaskNode({ data }: { data: any }) {
+  const bg = useColorModeValue("gray.800", "gray.700");
+  const border = useColorModeValue("gray.600", "gray.500");
+  const color = useColorModeValue("gray.100", "gray.100");
+  return (
+    <Box
+      p={3}
+      bg={bg}
+      color={color}
+      borderRadius="md"
+      minW="180px"
+      boxShadow="md"
+      borderWidth="1px"
+      borderColor={border}
+    >
+      <HStack spacing={2} alignItems="center">
+        <Checkbox
+          isChecked={data.status === "Terminée"}
+          onChange={data.onCheck}
+          colorScheme="teal"
+        />
+        <Input
+          value={data.label}
+          onChange={data.onLabelChange}
+          fontWeight="bold"
+          border="none"
+          bg="gray.900"
+          color="gray.100"
+          borderRadius="md"
+          px={2}
+          py={1}
+          size="sm"
+          _focus={{ boxShadow: "outline" }}
+        />
+        <IconButton
+          aria-label="Supprimer la tâche"
+          icon={<CloseIcon boxSize={3} />}
+          size="xs"
+          colorScheme="red"
+          variant="ghost"
+          onClick={data.onDelete}
+        />
+
+      </HStack>
+      <VStack alignItems="flex-start" spacing={2} mt={2}>
+        <HStack spacing={2}>
+          <Text fontSize="xs">Status :</Text>
+          <Select size="xs" value={data.status} onChange={data.onStatusChange} bg="gray.900" color="gray.100">
+            {statusOptions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </Select>
+        </HStack>
+        <HStack spacing={2}>
+          <Text fontSize="xs">Priorité :</Text>
+          <Select size="xs" value={data.priority} onChange={data.onPriorityChange} bg="gray.900" color="gray.100">
+            {priorityOptions.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </Select>
+        </HStack>
+      </VStack>
+    </Box>
+  );
+}
+
+const nodeTypes = { task: TaskNode };
+
+let id = 1;
+const getId = () => `task_${id++}`;
+
+export default function TaskManager() {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<any>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<any>>([]);
+  const toast = useToast();
+
+  // Chargement initial depuis le backend
+  useEffect(() => {
+    fetch(`${API_URL}/tasks`)
+      .then((res) => res.json())
+      .then(({ tasks, edges }) => {
+        setNodes(tasks.map((t: any) => ({
+          id: t.id,
+          type: "task",
+          position: { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
+          data: { label: t.label, status: t.status, priority: t.priority },
+        })));
+        setEdges(edges.map((e: any) => ({ id: e.id, source: e.source, target: e.target })));
+      });
+  }, [setNodes, setEdges]);
+
+  // Ajout d'une nouvelle tâche
+  const addTask = async () => {
+    const newId = getId();
+    const newTask = {
+      id: newId,
+      label: `Tâche ${nodes.length + 1}`,
+      status: "À faire",
+      priority: "Basse",
+    };
+    setNodes((nds: Node<any>[]) => [
+      ...nds,
+      {
+        id: newId,
+        type: "task",
+        position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 100 },
+        data: { ...newTask },
+      },
+    ]);
+    await fetch(`${API_URL}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    });
+    toast({ title: "Tâche ajoutée", status: "success", duration: 1500, isClosable: true });
+  };
+
+  // Suppression d'une tâche
+  const deleteTask = async (id: string) => {
+    setNodes((nds: Node<any>[]) => nds.filter((node: Node<any>) => node.id !== id));
+    setEdges((eds: Edge<any>[]) => eds.filter((edge: Edge<any>) => edge.source !== id && edge.target !== id));
+    await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" });
+    toast({ title: "Tâche supprimée", status: "info", duration: 1500, isClosable: true });
+  };
+
+  // Mise à jour d'une tâche
+  const updateNodeData = async (id: string, changes: any) => {
+    setNodes((nds: Node<any>[]) =>
+      nds.map((node: Node<any>) =>
+        node.id === id ? { ...node, data: { ...node.data, ...changes } } : node
+      )
+    );
+    const node = nodes.find((n) => n.id === id);
+    if (node) {
+      await fetch(`${API_URL}/tasks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...node.data, ...changes }),
+      });
+    }
+  };
+
+  // Ajout d'une liaison entre deux tâches
+  const onConnect = useCallback(async (params: Edge<any> | any) => {
+    setEdges((eds: Edge<any>[]) => addEdge(params, eds));
+    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
+    await fetch(`${API_URL}/edges`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: edgeId, source: params.source, target: params.target }),
+    });
+  }, [setEdges]);
+
+  // Suppression d'une liaison
+  const onEdgesChangeWithDelete = useCallback((changes: any) => {
+    changes.forEach(async (change: any) => {
+      if (change.type === "remove") {
+        await fetch(`${API_URL}/edges/${change.id}`, { method: "DELETE" });
+      }
+    });
+    onEdgesChange(changes);
+  }, [onEdgesChange]);
+
+  // Injection des handlers dans les nodes
+  const nodesWithHandlers = nodes.map((node: Node<any>) => ({
+    ...node,
+    data: {
+      ...node.data,
+      onCheck: () => updateNodeData(node.id, { status: node.data.status === "Terminée" ? "À faire" : "Terminée" }),
+      onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { status: e.target.value }),
+      onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { priority: e.target.value }),
+      onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => updateNodeData(node.id, { label: e.target.value }),
+      onDelete: () => deleteTask(node.id),
+    },
+  }));
+
+  return (
+    <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
+      <Flex as="header" align="center" bg="gray.800" px={6} py={3} boxShadow="md" position="absolute" top={0} left={0} w="100vw" zIndex={2}>
+        <Heading as="h1" size="md" color="teal.200">Elysium Mind</Heading>
+        <Spacer />
+        <IconButton
+          aria-label="Ajouter une tâche"
+          icon={<AddIcon />}
+          colorScheme="teal"
+          size="md"
+          onClick={addTask}
+        />
+      </Flex>
+      <Box w="100vw" h="100vh" m={0} p={0} pt="60px">
+        <ReactFlow
+          nodes={nodesWithHandlers}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChangeWithDelete}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          fitView
+        >
+          {/* <MiniMap /> */}
+          <Controls />
+          <Background gap={16} />
+        </ReactFlow>
+      </Box>
+    </Box>
+  );
+} 
