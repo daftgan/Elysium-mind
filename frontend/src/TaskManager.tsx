@@ -30,7 +30,6 @@ import {
 import { CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { BrainIcon } from "./components/BrainIcon";
 
-const statusOptions = ["À faire", "En cours", "Terminée"];
 const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -50,6 +49,12 @@ function TaskNode({ data }: { data: any }) {
       borderWidth="1px"
       borderColor={border}
       position="relative"
+      _hover={{
+        "& .add-button": {
+          opacity: 1,
+          visibility: "visible",
+        }
+      }}
     >
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
@@ -64,8 +69,21 @@ function TaskNode({ data }: { data: any }) {
         transform="translateY(-50%)"
         zIndex={1}
         onClick={data.onAddLinkedNode}
+        className="add-button"
+        opacity={0}
+        visibility="hidden"
+        transition="all 0.2s ease-in-out"
+        _hover={{
+          transform: "translateY(-50%) scale(1.1)",
+        }}
       />
       <HStack spacing={2} alignItems="center">
+        <Checkbox
+          isChecked={data.status === "Terminée"}
+          onChange={data.onCheck}
+          colorScheme="teal"
+          size="sm"
+        />
         <Input
           value={data.label}
           onChange={data.onLabelChange}
@@ -78,6 +96,8 @@ function TaskNode({ data }: { data: any }) {
           py={1}
           size="sm"
           _focus={{ boxShadow: "outline" }}
+          textDecoration={data.status === "Terminée" ? "line-through" : "none"}
+          opacity={data.status === "Terminée" ? 0.7 : 1}
         />
         <IconButton
           aria-label="Delete task"
