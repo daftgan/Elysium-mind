@@ -32,7 +32,7 @@ import { CloseIcon, AddIcon } from "@chakra-ui/icons";
 const statusOptions = ["À faire", "En cours", "Terminée"];
 const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
-const API_URL = "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function TaskNode({ data }: { data: any }) {
   const bg = useColorModeValue("gray.800", "gray.700");

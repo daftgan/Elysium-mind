@@ -58,16 +58,16 @@ npm install
 ### 1. Start the backend (API)
 ```sh
 cd backend
-node index.js
+npm start
 ```
-The server runs at http://localhost:3001
+The server runs at the port defined by the `PORT` environment variable (default `3001`).
 
 ### 2. Start the frontend (React)
 ```sh
 cd frontend
-npm run dev
+VITE_API_URL="http://localhost:3001" npm run dev
 ```
-Open your browser at the indicated URL (e.g., http://localhost:5173)
+Open your browser at the indicated URL (e.g., http://localhost:5173). Adjust `VITE_API_URL` if your backend runs elsewhere.
 
 ---
 
