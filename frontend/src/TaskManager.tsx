@@ -6,6 +6,8 @@ import ReactFlow, {
   addEdge,
   useNodesState,
   useEdgesState,
+  Handle,
+  Position,
 } from "reactflow";
 import type { Node, Edge } from "reactflow";
 import "reactflow/dist/style.css";
@@ -46,13 +48,23 @@ function TaskNode({ data }: { data: any }) {
       boxShadow="md"
       borderWidth="1px"
       borderColor={border}
+      position="relative"
     >
+      <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
+      <IconButton
+        aria-label="Add linked node"
+        icon={<AddIcon boxSize={3} />}
+        size="xs"
+        colorScheme="teal"
+        position="absolute"
+        right={-4}
+        top="50%"
+        transform="translateY(-50%)"
+        zIndex={1}
+        onClick={data.onAddLinkedNode}
+      />
       <HStack spacing={2} alignItems="center">
-        <Checkbox
-          isChecked={data.status === "Terminée"}
-          onChange={data.onCheck}
-          colorScheme="teal"
-        />
         <Input
           value={data.label}
           onChange={data.onLabelChange}
@@ -67,33 +79,22 @@ function TaskNode({ data }: { data: any }) {
           _focus={{ boxShadow: "outline" }}
         />
         <IconButton
-          aria-label="Supprimer la tâche"
+          aria-label="Delete task"
           icon={<CloseIcon boxSize={3} />}
           size="xs"
           colorScheme="red"
           variant="ghost"
           onClick={data.onDelete}
         />
-
       </HStack>
-      <VStack alignItems="flex-start" spacing={2} mt={2}>
-        <HStack spacing={2}>
-          <Text fontSize="xs">Status :</Text>
-          <Select size="xs" value={data.status} onChange={data.onStatusChange} bg="gray.900" color="gray.100">
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </Select>
-        </HStack>
-        <HStack spacing={2}>
-          <Text fontSize="xs">Priorité :</Text>
-          <Select size="xs" value={data.priority} onChange={data.onPriorityChange} bg="gray.900" color="gray.100">
-            {priorityOptions.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </Select>
-        </HStack>
-      </VStack>
+      <HStack spacing={2} mt={2}>
+        <Text fontSize="xs" whiteSpace="nowrap">Priorité :</Text>
+        <Select size="xs" value={data.priority} onChange={data.onPriorityChange} bg="gray.900" color="gray.100">
+          {priorityOptions.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </Select>
+      </HStack>
     </Box>
   );
 }
@@ -174,6 +175,47 @@ export default function TaskManager() {
     }
   };
 
+  // Ajout d'un node relié à un node existant
+  const addLinkedNode = async (sourceId: string) => {
+    const newId = getId();
+    const newTask = {
+      id: newId,
+      label: `Tâche ${nodes.length + 1}`,
+      status: "À faire",
+      priority: "Basse",
+    };
+    // Position à côté du node source
+    const sourceNode = nodes.find((n) => n.id === sourceId);
+    const pos = sourceNode ? { x: sourceNode.position.x + 180, y: sourceNode.position.y + 40 } : { x: 200, y: 200 };
+    // Ajout du node côté frontend
+    setNodes((nds: Node<any>[]) => [
+      ...nds,
+      {
+        id: newId,
+        type: "task",
+        position: pos,
+        data: { ...newTask },
+      },
+    ]);
+    // Créer l'edge en utilisant addEdge
+    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
+    const newEdge = { id: edgeId, source: sourceId, target: newId };
+    setEdges((eds) => addEdge(newEdge, eds));
+    console.log('Edge added:', newEdge);
+    // Ajout du node côté backend
+    await fetch(`${API_URL}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    });
+    // Ajout du lien côté backend
+    await fetch(`${API_URL}/edges`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: edgeId, source: sourceId, target: newId }),
+    });
+  };
+
   // Ajout d'une liaison entre deux tâches
   const onConnect = useCallback(async (params: Edge<any> | any) => {
     setEdges((eds: Edge<any>[]) => addEdge(params, eds));
@@ -205,6 +247,7 @@ export default function TaskManager() {
       onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { priority: e.target.value }),
       onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => updateNodeData(node.id, { label: e.target.value }),
       onDelete: () => deleteTask(node.id),
+      onAddLinkedNode: () => addLinkedNode(node.id),
     },
   }));
 
