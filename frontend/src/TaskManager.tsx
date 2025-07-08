@@ -56,7 +56,7 @@ function TaskNode({ data }: { data: any }) {
         }
       }}
     >
-      <Handle type="target" position={Position.Left} />
+      {data.hasIncoming && <Handle type="target" position={Position.Left} />}
       <Handle type="source" position={Position.Right} />
       <IconButton
         aria-label="Add linked node"
@@ -259,18 +259,24 @@ export default function TaskManager() {
   }, [onEdgesChange]);
 
   // Injection des handlers dans les nodes
-  const nodesWithHandlers = nodes.map((node: Node<any>) => ({
-    ...node,
-    data: {
-      ...node.data,
-      onCheck: () => updateNodeData(node.id, { status: node.data.status === "Terminée" ? "À faire" : "Terminée" }),
-      onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { status: e.target.value }),
-      onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { priority: e.target.value }),
-      onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => updateNodeData(node.id, { label: e.target.value }),
-      onDelete: () => deleteTask(node.id),
-      onAddLinkedNode: () => addLinkedNode(node.id),
-    },
-  }));
+  const nodesWithHandlers = nodes.map((node: Node<any>) => {
+    const hasIncoming = edges.some((e) => e.target === node.id);
+    const hasOutgoing = edges.some((e) => e.source === node.id);
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        onCheck: () => updateNodeData(node.id, { status: node.data.status === "Terminée" ? "À faire" : "Terminée" }),
+        onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { status: e.target.value }),
+        onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => updateNodeData(node.id, { priority: e.target.value }),
+        onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => updateNodeData(node.id, { label: e.target.value }),
+        onDelete: () => deleteTask(node.id),
+        onAddLinkedNode: () => addLinkedNode(node.id),
+        hasIncoming,
+        hasOutgoing,
+      },
+    };
+  });
 
   return (
     <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
@@ -296,7 +302,7 @@ export default function TaskManager() {
           onClick={addTask}
         />
       </Flex>
-      <Box w="100vw" h="100vh" m={0} p={0} pt="60px">
+      <Box w="100vw" h="calc(100vh - 44px)" m={0} p={0} pt="0" position="absolute" top="44px" left={0}>
         <ReactFlow
           nodes={nodesWithHandlers}
           edges={edges}
