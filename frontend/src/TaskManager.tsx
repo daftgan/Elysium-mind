@@ -29,9 +29,7 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { BrainIcon } from "./components/BrainIcon";
-import { dagreEngine } from "./layout/dagreEngine";
-import { v4 as uuidv4 } from 'uuid';
-import { HttpTaskService } from "./api/TaskService";
+import { useTaskGraph } from "./store/useTaskGraph";
 
 const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
@@ -126,133 +124,23 @@ function TaskNode({ data }: { data: any }) {
 
 const nodeTypes = { task: TaskNode };
 
-let id = 1;
-const getId = () => uuidv4();
-
 export default function TaskManager() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<any>>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<any>>([]);
+  const {
+    nodes,
+    edges,
+    load,
+    addTask,
+    deleteTask,
+    updateNodeData,
+    addLinkedNode,
+    onConnect,
+    onEdgesChangeWithDelete,
+    autoLayout,
+  } = useTaskGraph();
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
-  const taskService = useMemo(() => new HttpTaskService(API_URL), []);
   const hasInitialFit = useRef(false);
-  const toast = useToast();
 
-  // Chargement initial depuis le backend
-  useEffect(() => {
-    taskService.fetchAll()
-      .then(({ tasks, edges }) => {
-        const initialNodes = tasks.map((t) => ({
-          id: t.id,
-          type: "task",
-          position: { x: 0, y: 0 },
-          data: { label: t.label, status: t.status, priority: t.priority },
-        }));
-        const initialEdges = edges.map((e) => ({ id: e.id, source: e.source, target: e.target }));
-        setEdges(initialEdges);
-        const layouted = dagreEngine.layout(initialNodes, initialEdges);
-        setNodes(layouted);
-      });
-  }, [setNodes, setEdges, taskService]);
-
-  // Ajout d'une nouvelle tâche
-  const addTask = async () => {
-    const newId = getId();
-    const newTask = {
-      id: newId,
-      label: `Tâche ${nodes.length + 1}`,
-      status: "À faire",
-      priority: "Basse",
-    };
-    setNodes((nds: Node<any>[]) => {
-      const newNodes = [
-        ...nds,
-        {
-          id: newId,
-          type: "task",
-          position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 100 },
-          data: { ...newTask },
-        },
-      ];
-      // Auto-layout après ajout
-      return dagreEngine.layout(newNodes, edges);
-    });
-    await taskService.createTask(newTask);
-    toast({ title: "Tâche ajoutée", status: "success", duration: 1500, isClosable: true });
-  };
-
-  // Suppression d'une tâche
-  const deleteTask = async (id: string) => {
-    setNodes((nds: Node<any>[]) => nds.filter((node: Node<any>) => node.id !== id));
-    setEdges((eds: Edge<any>[]) => eds.filter((edge: Edge<any>) => edge.source !== id && edge.target !== id));
-    await taskService.deleteTask(id);
-    toast({ title: "Tâche supprimée", status: "info", duration: 1500, isClosable: true });
-  };
-
-  // Mise à jour d'une tâche
-  const updateNodeData = async (id: string, changes: any) => {
-    setNodes((nds: Node<any>[]) =>
-      nds.map((node: Node<any>) =>
-        node.id === id ? { ...node, data: { ...node.data, ...changes } } : node
-      )
-    );
-    const node = nodes.find((n) => n.id === id);
-    if (node) {
-      await taskService.updateTask(id, { ...changes });
-    }
-  };
-
-  // Ajout d'un node relié à un node existant
-  const addLinkedNode = async (sourceId: string) => {
-    const newId = getId();
-    const newTask = {
-      id: newId,
-      label: `Tâche ${nodes.length + 1}`,
-      status: "À faire",
-      priority: "Basse",
-    };
-    // Position à côté du node source (sera réajustée par l'auto-layout)
-    const sourceNode = nodes.find((n) => n.id === sourceId);
-    const pos = sourceNode ? { x: sourceNode.position.x + 180, y: sourceNode.position.y + 40 } : { x: 200, y: 200 };
-    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
-    // Ajout du node côté frontend
-    setNodes((nds: Node<any>[]) => {
-      const newNodes = [
-        ...nds,
-        {
-          id: newId,
-          type: "task",
-          position: pos,
-          data: { ...newTask },
-        },
-      ];
-      // Ajout de l'edge côté frontend
-      const newEdge = { id: edgeId, source: sourceId, target: newId };
-      setEdges((eds) => addEdge(newEdge, eds));
-      // Auto-layout après ajout du node et de l'edge
-      return dagreEngine.layout(newNodes, [...edges, newEdge]);
-    });
-    // Ajout du node côté backend
-    await taskService.createTask(newTask);
-    // Ajout du lien côté backend
-    await taskService.createEdge({ id: edgeId, source: sourceId, target: newId });
-  };
-
-  // Ajout d'une liaison entre deux tâches
-  const onConnect = useCallback(async (params: Edge<any> | any) => {
-    setEdges((eds: Edge<any>[]) => addEdge(params, eds));
-    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
-    await taskService.createEdge({ id: edgeId, source: params.source, target: params.target });
-  }, [setEdges, taskService]);
-
-  // Suppression d'une liaison
-  const onEdgesChangeWithDelete = useCallback((changes: any) => {
-    changes.forEach(async (change: any) => {
-      if (change.type === "remove") {
-        await taskService.deleteEdge(change.id);
-      }
-    });
-    onEdgesChange(changes);
-  }, [onEdgesChange, taskService]);
+  useEffect(() => { load(); }, [load]);
 
   // Injection des handlers dans les nodes
   const nodesWithHandlers = nodes.map((node: Node<any>) => {
@@ -274,13 +162,6 @@ export default function TaskManager() {
     };
   });
 
-  const handleAutoLayout = () => {
-    const layouted = dagreEngine.layout(nodes, edges);
-    setNodes(layouted);
-    toast({ title: "Auto-layout appliqué", status: "success", duration: 1500, isClosable: true });
-  };
-
-  // Fit view sur premier rendu lorsque les nodes sont prêts
   useEffect(() => {
     if (!hasInitialFit.current && nodes.length > 0) {
       reactFlowInstance.current?.fitView({ padding: 0.2 });
@@ -304,7 +185,7 @@ export default function TaskManager() {
           Elysium Mind
         </Heading>
         <Spacer />
-        <Button size="xs" colorScheme="purple" mr={2} onClick={handleAutoLayout}>Auto-layout</Button>
+        <Button size="xs" colorScheme="purple" mr={2} onClick={autoLayout}>Auto-layout</Button>
         <IconButton
           aria-label="Add task"
           icon={<AddIcon boxSize={3} />}
@@ -318,7 +199,7 @@ export default function TaskManager() {
           onInit={(instance) => (reactFlowInstance.current = instance)}
           nodes={nodesWithHandlers}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={() => {}}
           onEdgesChange={onEdgesChangeWithDelete}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
