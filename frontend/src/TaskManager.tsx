@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useMemo } from "react";
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -29,45 +29,14 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { BrainIcon } from "./components/BrainIcon";
+import { dagreEngine } from "./layout/dagreEngine";
 import { v4 as uuidv4 } from 'uuid';
-import dagre from 'dagre';
+import { HttpTaskService } from "./api/TaskService";
 
 const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-const nodeWidth = 220; // largeur augmentée pour inclure padding/marges
-const nodeHeight = 110; // hauteur augmentée pour inclure padding/marges
-const nodePadding = 40; // padding supplémentaire pour dagre
-
-const layoutDirection: 'TB' | 'LR' = 'LR';
-
-function getLayoutedElements(nodes: Node<any>[], edges: Edge<any>[], direction: 'TB' | 'LR' = layoutDirection) {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 50, ranksep: 160, ranker: 'tight-tree' });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth + nodePadding, height: nodeHeight + nodePadding });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  return nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
-      },
-    };
-  });
-}
 
 function TaskNode({ data }: { data: any }) {
   const bg = useColorModeValue("gray.800", "gray.700");
@@ -164,26 +133,26 @@ export default function TaskManager() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<any>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<any>>([]);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const taskService = useMemo(() => new HttpTaskService(API_URL), []);
   const hasInitialFit = useRef(false);
   const toast = useToast();
 
   // Chargement initial depuis le backend
   useEffect(() => {
-    fetch(`${API_URL}/tasks`)
-      .then((res) => res.json())
+    taskService.fetchAll()
       .then(({ tasks, edges }) => {
-        const initialNodes = tasks.map((t: any) => ({
+        const initialNodes = tasks.map((t) => ({
           id: t.id,
           type: "task",
           position: { x: 0, y: 0 },
           data: { label: t.label, status: t.status, priority: t.priority },
         }));
-        const initialEdges = edges.map((e: any) => ({ id: e.id, source: e.source, target: e.target }));
+        const initialEdges = edges.map((e) => ({ id: e.id, source: e.source, target: e.target }));
         setEdges(initialEdges);
-        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        const layouted = dagreEngine.layout(initialNodes, initialEdges);
         setNodes(layouted);
       });
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, taskService]);
 
   // Ajout d'une nouvelle tâche
   const addTask = async () => {
@@ -205,13 +174,9 @@ export default function TaskManager() {
         },
       ];
       // Auto-layout après ajout
-      return getLayoutedElements(newNodes, edges, layoutDirection);
+      return dagreEngine.layout(newNodes, edges);
     });
-    await fetch(`${API_URL}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTask),
-    });
+    await taskService.createTask(newTask);
     toast({ title: "Tâche ajoutée", status: "success", duration: 1500, isClosable: true });
   };
 
@@ -219,7 +184,7 @@ export default function TaskManager() {
   const deleteTask = async (id: string) => {
     setNodes((nds: Node<any>[]) => nds.filter((node: Node<any>) => node.id !== id));
     setEdges((eds: Edge<any>[]) => eds.filter((edge: Edge<any>) => edge.source !== id && edge.target !== id));
-    await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" });
+    await taskService.deleteTask(id);
     toast({ title: "Tâche supprimée", status: "info", duration: 1500, isClosable: true });
   };
 
@@ -232,11 +197,7 @@ export default function TaskManager() {
     );
     const node = nodes.find((n) => n.id === id);
     if (node) {
-      await fetch(`${API_URL}/tasks/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...node.data, ...changes }),
-      });
+      await taskService.updateTask(id, { ...changes });
     }
   };
 
@@ -252,6 +213,7 @@ export default function TaskManager() {
     // Position à côté du node source (sera réajustée par l'auto-layout)
     const sourceNode = nodes.find((n) => n.id === sourceId);
     const pos = sourceNode ? { x: sourceNode.position.x + 180, y: sourceNode.position.y + 40 } : { x: 200, y: 200 };
+    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
     // Ajout du node côté frontend
     setNodes((nds: Node<any>[]) => {
       const newNodes = [
@@ -264,46 +226,33 @@ export default function TaskManager() {
         },
       ];
       // Ajout de l'edge côté frontend
-      const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
       const newEdge = { id: edgeId, source: sourceId, target: newId };
       setEdges((eds) => addEdge(newEdge, eds));
       // Auto-layout après ajout du node et de l'edge
-      return getLayoutedElements(newNodes, [...edges, newEdge], layoutDirection);
+      return dagreEngine.layout(newNodes, [...edges, newEdge]);
     });
     // Ajout du node côté backend
-    await fetch(`${API_URL}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTask),
-    });
+    await taskService.createTask(newTask);
     // Ajout du lien côté backend
-    await fetch(`${API_URL}/edges`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: `edge_${Math.random().toString(36).slice(2, 9)}`, source: sourceId, target: newId }),
-    });
+    await taskService.createEdge({ id: edgeId, source: sourceId, target: newId });
   };
 
   // Ajout d'une liaison entre deux tâches
   const onConnect = useCallback(async (params: Edge<any> | any) => {
     setEdges((eds: Edge<any>[]) => addEdge(params, eds));
     const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
-    await fetch(`${API_URL}/edges`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: edgeId, source: params.source, target: params.target }),
-    });
-  }, [setEdges]);
+    await taskService.createEdge({ id: edgeId, source: params.source, target: params.target });
+  }, [setEdges, taskService]);
 
   // Suppression d'une liaison
   const onEdgesChangeWithDelete = useCallback((changes: any) => {
     changes.forEach(async (change: any) => {
       if (change.type === "remove") {
-        await fetch(`${API_URL}/edges/${change.id}`, { method: "DELETE" });
+        await taskService.deleteEdge(change.id);
       }
     });
     onEdgesChange(changes);
-  }, [onEdgesChange]);
+  }, [onEdgesChange, taskService]);
 
   // Injection des handlers dans les nodes
   const nodesWithHandlers = nodes.map((node: Node<any>) => {
@@ -326,7 +275,7 @@ export default function TaskManager() {
   });
 
   const handleAutoLayout = () => {
-    const layouted = getLayoutedElements(nodes, edges, layoutDirection);
+    const layouted = dagreEngine.layout(nodes, edges);
     setNodes(layouted);
     toast({ title: "Auto-layout appliqué", status: "success", duration: 1500, isClosable: true });
   };
