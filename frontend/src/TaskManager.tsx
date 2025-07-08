@@ -29,10 +29,45 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon, AddIcon } from "@chakra-ui/icons";
 import { BrainIcon } from "./components/BrainIcon";
+import { v4 as uuidv4 } from 'uuid';
+import dagre from 'dagre';
 
 const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+const nodeWidth = 220; // largeur augmentée pour inclure padding/marges
+const nodeHeight = 110; // hauteur augmentée pour inclure padding/marges
+const nodePadding = 40; // padding supplémentaire pour dagre
+
+const layoutDirection: 'TB' | 'LR' = 'LR';
+
+function getLayoutedElements(nodes: Node<any>[], edges: Edge<any>[], direction: 'TB' | 'LR' = layoutDirection) {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 50, ranksep: 160, ranker: 'tight-tree' });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth + nodePadding, height: nodeHeight + nodePadding });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  return nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    return {
+      ...node,
+      position: {
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - nodeHeight / 2,
+      },
+    };
+  });
+}
 
 function TaskNode({ data }: { data: any }) {
   const bg = useColorModeValue("gray.800", "gray.700");
@@ -123,7 +158,7 @@ function TaskNode({ data }: { data: any }) {
 const nodeTypes = { task: TaskNode };
 
 let id = 1;
-const getId = () => `task_${id++}`;
+const getId = () => uuidv4();
 
 export default function TaskManager() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<any>>([]);
@@ -154,15 +189,19 @@ export default function TaskManager() {
       status: "À faire",
       priority: "Basse",
     };
-    setNodes((nds: Node<any>[]) => [
-      ...nds,
-      {
-        id: newId,
-        type: "task",
-        position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 100 },
-        data: { ...newTask },
-      },
-    ]);
+    setNodes((nds: Node<any>[]) => {
+      const newNodes = [
+        ...nds,
+        {
+          id: newId,
+          type: "task",
+          position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 100 },
+          data: { ...newTask },
+        },
+      ];
+      // Auto-layout après ajout
+      return getLayoutedElements(newNodes, edges, layoutDirection);
+    });
     await fetch(`${API_URL}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,24 +244,27 @@ export default function TaskManager() {
       status: "À faire",
       priority: "Basse",
     };
-    // Position à côté du node source
+    // Position à côté du node source (sera réajustée par l'auto-layout)
     const sourceNode = nodes.find((n) => n.id === sourceId);
     const pos = sourceNode ? { x: sourceNode.position.x + 180, y: sourceNode.position.y + 40 } : { x: 200, y: 200 };
     // Ajout du node côté frontend
-    setNodes((nds: Node<any>[]) => [
-      ...nds,
-      {
-        id: newId,
-        type: "task",
-        position: pos,
-        data: { ...newTask },
-      },
-    ]);
-    // Créer l'edge en utilisant addEdge
-    const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
-    const newEdge = { id: edgeId, source: sourceId, target: newId };
-    setEdges((eds) => addEdge(newEdge, eds));
-    console.log('Edge added:', newEdge);
+    setNodes((nds: Node<any>[]) => {
+      const newNodes = [
+        ...nds,
+        {
+          id: newId,
+          type: "task",
+          position: pos,
+          data: { ...newTask },
+        },
+      ];
+      // Ajout de l'edge côté frontend
+      const edgeId = `edge_${Math.random().toString(36).slice(2, 9)}`;
+      const newEdge = { id: edgeId, source: sourceId, target: newId };
+      setEdges((eds) => addEdge(newEdge, eds));
+      // Auto-layout après ajout du node et de l'edge
+      return getLayoutedElements(newNodes, [...edges, newEdge], layoutDirection);
+    });
     // Ajout du node côté backend
     await fetch(`${API_URL}/tasks`, {
       method: "POST",
@@ -233,7 +275,7 @@ export default function TaskManager() {
     await fetch(`${API_URL}/edges`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: edgeId, source: sourceId, target: newId }),
+      body: JSON.stringify({ id: `edge_${Math.random().toString(36).slice(2, 9)}`, source: sourceId, target: newId }),
     });
   };
 
@@ -278,6 +320,12 @@ export default function TaskManager() {
     };
   });
 
+  const handleAutoLayout = () => {
+    const layouted = getLayoutedElements(nodes, edges, layoutDirection);
+    setNodes(layouted);
+    toast({ title: "Auto-layout appliqué", status: "success", duration: 1500, isClosable: true });
+  };
+
   return (
     <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
       <Flex as="header" align="center" bg="gray.800" px={4} py={1} boxShadow="md" position="absolute" top={0} left={0} w="100vw" zIndex={2} h="44px">
@@ -294,6 +342,7 @@ export default function TaskManager() {
           Elysium Mind
         </Heading>
         <Spacer />
+        <Button size="xs" colorScheme="purple" mr={2} onClick={handleAutoLayout}>Auto-layout</Button>
         <IconButton
           aria-label="Add task"
           icon={<AddIcon boxSize={3} />}
