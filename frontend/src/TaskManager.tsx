@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -9,7 +9,7 @@ import ReactFlow, {
   Handle,
   Position,
 } from "reactflow";
-import type { Node, Edge } from "reactflow";
+import type { Node, Edge, ReactFlowInstance } from "reactflow";
 import "reactflow/dist/style.css";
 import {
   Box,
@@ -163,6 +163,8 @@ const getId = () => uuidv4();
 export default function TaskManager() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<any>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<any>>([]);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const hasInitialFit = useRef(false);
   const toast = useToast();
 
   // Chargement initial depuis le backend
@@ -170,13 +172,16 @@ export default function TaskManager() {
     fetch(`${API_URL}/tasks`)
       .then((res) => res.json())
       .then(({ tasks, edges }) => {
-        setNodes(tasks.map((t: any) => ({
+        const initialNodes = tasks.map((t: any) => ({
           id: t.id,
           type: "task",
-          position: { x: 100 + Math.random() * 300, y: 100 + Math.random() * 200 },
+          position: { x: 0, y: 0 },
           data: { label: t.label, status: t.status, priority: t.priority },
-        })));
-        setEdges(edges.map((e: any) => ({ id: e.id, source: e.source, target: e.target })));
+        }));
+        const initialEdges = edges.map((e: any) => ({ id: e.id, source: e.source, target: e.target }));
+        setEdges(initialEdges);
+        const layouted = getLayoutedElements(initialNodes, initialEdges);
+        setNodes(layouted);
       });
   }, [setNodes, setEdges]);
 
@@ -326,6 +331,14 @@ export default function TaskManager() {
     toast({ title: "Auto-layout appliqué", status: "success", duration: 1500, isClosable: true });
   };
 
+  // Fit view sur premier rendu lorsque les nodes sont prêts
+  useEffect(() => {
+    if (!hasInitialFit.current && nodes.length > 0) {
+      reactFlowInstance.current?.fitView({ padding: 0.2 });
+      hasInitialFit.current = true;
+    }
+  }, [nodes]);
+
   return (
     <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
       <Flex as="header" align="center" bg="gray.800" px={4} py={1} boxShadow="md" position="absolute" top={0} left={0} w="100vw" zIndex={2} h="44px">
@@ -353,12 +366,15 @@ export default function TaskManager() {
       </Flex>
       <Box w="100vw" h="calc(100vh - 44px)" m={0} p={0} pt="0" position="absolute" top="44px" left={0}>
         <ReactFlow
+          onInit={(instance) => (reactFlowInstance.current = instance)}
           nodes={nodesWithHandlers}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChangeWithDelete}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          maxZoom={1}
+          minZoom={0.05}   /* autorise un zoom-out jusqu'à 5 % */
           fitView
         >
           {/* <MiniMap /> */}
