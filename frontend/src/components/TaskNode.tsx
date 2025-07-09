@@ -9,6 +9,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { Handle, Position } from "reactflow";
+import { themeConfig } from "../config/theme";
 
 export interface TaskNodeData {
   label: string;
@@ -29,9 +30,9 @@ export interface TaskNodeData {
  * Composant mémoïsé pour éviter les re-rendus inutiles.
  */
 const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
-  const bg = useColorModeValue("gray.900", "gray.800");
-  const border = useColorModeValue("gray.600", "gray.500");
-  const color = useColorModeValue("gray.100", "gray.100");
+  const bg = themeConfig.nodes.colors.background;
+  const border = themeConfig.nodes.colors.border;
+  const color = themeConfig.nodes.colors.text;
 
   // État local pour l’édition du label
   const [localLabel, setLocalLabel] = useState(data.label);
@@ -56,9 +57,9 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
       p={3}
       bg={bg}
       color={color}
-      borderRadius="xl" // arrondi plus prononcé
+      borderRadius={themeConfig.nodes.borderRadius}
       minW="180px"
-      boxShadow="0 2px 6px 0 #111" // ombre courte, nette, non diffuse
+      boxShadow={themeConfig.nodes.shadow}
       borderWidth="1px"
       borderColor={border}
       position="relative"
@@ -98,42 +99,42 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
         <Checkbox
           isChecked={data.status === "Terminée"}
           colorScheme="whiteAlpha"
+          size={themeConfig.checkbox.size}
+          borderRadius={themeConfig.checkbox.borderRadius}
+          onChange={data.onCheck}
           sx={{
             ".chakra-checkbox__control": {
-              borderColor: "white",
-              borderWidth: "1px", // épaisseur fine
-              borderRadius: "lg", // arrondi plus prononcé
+              borderColor: themeConfig.checkbox.color,
+              borderWidth: themeConfig.checkbox.borderWidth,
+              borderRadius: themeConfig.checkbox.borderRadius,
               _hover: {
                 bg: "transparent",
-                borderColor: "white",
+                borderColor: themeConfig.checkbox.color,
               },
             },
             _checked: {
               "& .chakra-checkbox__control": {
                 bg: "transparent", // pas de fond quand checked
-                borderColor: "white",
-                borderWidth: "1px",
-                borderRadius: "lg",
-                "--checkbox-color": "white", // variable Chakra pour la couleur de l’icône
+                borderColor: themeConfig.checkbox.color,
+                borderWidth: themeConfig.checkbox.borderWidth,
+                borderRadius: themeConfig.checkbox.borderRadius,
+                "--checkbox-color": themeConfig.checkbox.color,
               },
               "& svg": {
-                fill: "white",
-                stroke: "white",
-                color: "white",
+                fill: themeConfig.checkbox.color,
+                stroke: themeConfig.checkbox.color,
+                color: themeConfig.checkbox.color,
               },
               "& .chakra-checkbox__icon": {
-                color: "white",
+                color: themeConfig.checkbox.color,
               },
             },
             // neutraliser le hover même quand checked
             ".chakra-checkbox__control[data-hover]": {
               bg: "transparent",
-              borderColor: "white",
+              borderColor: themeConfig.checkbox.color,
             },
           }}
-          size="lg" // plus grande – correspond mieux à la taille de la police
-          borderRadius="md" // coins plus arrondis
-          onChange={data.onCheck}
         />
         <Input
           value={localLabel}
@@ -141,10 +142,10 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
           onBlur={handleBlur}
           fontWeight="normal"
           variant="unstyled" // supprime toute bordure par défaut
-          color={data.status === "Terminée" ? "gray.500" : "gray.100"}
+          color={data.status === "Terminée" ? themeConfig.nodes.colors.textCompleted : themeConfig.nodes.colors.text}
           px={1}
           py={1}
-          fontSize="15.5px"
+          fontSize={themeConfig.nodes.fontSize}
           textDecoration={data.status === "Terminée" ? "line-through" : "none"}
           sx={data.status === "Terminée" ? {
             textDecorationColor: "white",

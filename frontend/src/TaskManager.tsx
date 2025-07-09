@@ -9,6 +9,7 @@ import { Box } from "@chakra-ui/react";
 import TaskHeader from "./components/TaskHeader";
 import TaskNode from "./components/TaskNode";
 import { useTaskGraph } from "./store/useTaskGraph";
+import { themeConfig, generateBackgroundCSS } from "./config/theme";
 
 const nodeTypes = { task: TaskNode };
 
@@ -68,13 +69,13 @@ export default function TaskManager() {
   // Fonction neutre mémoïsée pour éviter de recréer la référence à chaque render
   const handleNodesChange = useCallback(() => {}, []);
 
-  // Style par défaut des arêtes : bleu néon
+  // Style par défaut des arêtes depuis la config
   const defaultEdgeOptions = useMemo(
     () => ({
-      type: 'smoothstep',
+      type: themeConfig.edges.type,
       style: {
-        stroke: "#00e6ff", // bleu néon
-        strokeWidth: 2,
+        stroke: themeConfig.edges.color,
+        strokeWidth: themeConfig.edges.strokeWidth,
       },
     }),
     []
@@ -91,17 +92,8 @@ export default function TaskManager() {
         h="100vh"
         zIndex={0}
         style={{
-          background: `
-            /* Noise overlay (2-3% opacity) */
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
-            /* Fond organique avec 5 radial gradients */
-            radial-gradient(circle at 20% 30%, #010332 0%, transparent 40%),
-            radial-gradient(ellipse at 80% 40%, #100328 0%, transparent 45%),
-            radial-gradient(circle at 40% 70%, #29011C 0%, transparent 50%),
-            radial-gradient(ellipse at 75% 80%, #43000D 0%, transparent 35%),
-            radial-gradient(circle at 60% 20%, #530005 0%, transparent 30%)
-          `,
-          backgroundBlendMode: "overlay, screen, normal",
+          background: generateBackgroundCSS(),
+          backgroundBlendMode: themeConfig.background.blendMode,
         }}
       ></Box>
       {/* Barre d'en-tête */}
