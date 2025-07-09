@@ -1,18 +1,33 @@
 import dagre from "dagre";
 import type { Node as RFNode, Edge as RFEdge } from "reactflow";
-import { createDagreConfig, getNodeDimensions, adjustNodePosition } from "../config/layout";
 
 export interface LayoutEngine {
   layout(nodes: RFNode[], edges: RFEdge[]): RFNode[];
 }
 
+// Paramètres de layout – peuvent être rendus configurables au besoin
+const nodeWidth = 220;
+const nodeHeight = 110;
+const nodePadding = 80;
+const nodeSeparation = 50;
+const rankSeparation = 160;
+const layoutDirection: "TB" | "LR" = "LR";
+
 function layout(nodes: RFNode[], edges: RFEdge[]): RFNode[] {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph(createDagreConfig());
+  g.setGraph({
+    rankdir: layoutDirection,
+    nodesep: nodeSeparation,
+    ranksep: rankSeparation,
+    ranker: "tight-tree",
+  });
 
   nodes.forEach((node) => {
-    g.setNode(node.id, getNodeDimensions());
+    g.setNode(node.id, {
+      width: nodeWidth + nodePadding,
+      height: nodeHeight + nodePadding,
+    });
   });
 
   edges.forEach((edge) => g.setEdge(edge.source, edge.target));
@@ -23,7 +38,10 @@ function layout(nodes: RFNode[], edges: RFEdge[]): RFNode[] {
     const p = g.node(node.id);
     return {
       ...node,
-      position: adjustNodePosition(node, p),
+      position: {
+        x: p.x - nodeWidth / 2,
+        y: p.y - nodeHeight / 2,
+      },
     };
   });
 }

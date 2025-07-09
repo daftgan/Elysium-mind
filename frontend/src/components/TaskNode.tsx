@@ -3,7 +3,7 @@ import {
   Box,
   IconButton,
   HStack,
-  Input,
+  Textarea,
   Checkbox,
 } from "@chakra-ui/react";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
@@ -17,7 +17,7 @@ export interface TaskNodeData {
   hasOutgoing: boolean;
   onCheck: () => void;
   onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLabelChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onDelete: () => void;
   onAddLinkedNode: () => void;
 }
@@ -44,12 +44,16 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
 
   const handleBlur = useCallback(() => {
     if (localLabel !== data.label) {
-      data.onLabelChange({ target: { value: localLabel } } as React.ChangeEvent<HTMLInputElement>);
+      data.onLabelChange({ target: { value: localLabel } } as React.ChangeEvent<HTMLTextAreaElement>);
     }
   }, [localLabel, data.label, data.onLabelChange]);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setLocalLabel(e.target.value);
+    // Ajuster automatiquement la hauteur
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
   }, []);
 
   const handleCheck = useCallback(() => {
@@ -148,7 +152,7 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
             },
           }}
         />
-        <Input
+        <Textarea
           value={localLabel}
           onChange={handleChange}
           onBlur={handleBlur}
@@ -164,6 +168,14 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
             textDecorationThickness: "1px",
           } : {}}
           opacity={isCompleted ? 0.7 : 1}
+          resize="none"
+          minH="auto"
+          rows={1}
+          overflow="hidden"
+          _focus={{
+            boxShadow: "none",
+            outline: "none",
+          }}
         />
         <IconButton
           aria-label="Delete task"
