@@ -2,7 +2,7 @@ export interface TaskDTO {
   id: string;
   label: string;
   status: string;
-  priority: string;
+  priority?: string; // optionnel dorénavant
 }
 
 export interface EdgeDTO {

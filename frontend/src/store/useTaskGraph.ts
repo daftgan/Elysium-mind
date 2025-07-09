@@ -50,7 +50,7 @@ export const useTaskGraph = create<TaskGraphState>((set, get) => ({
       id: newId,
       label: `Tâche ${nodes.length + 1}`,
       status: 'À faire',
-      priority: 'Basse',
+      // priority supprimée
     };
     const newNodes = [
       ...nodes,
@@ -90,7 +90,7 @@ export const useTaskGraph = create<TaskGraphState>((set, get) => ({
       id: newId,
       label: `Tâche ${nodes.length + 1}`,
       status: 'À faire',
-      priority: 'Basse',
+      // priority supprimée
     };
     const sourceNode = nodes.find((n) => n.id === sourceId);
     const pos = sourceNode ? { x: sourceNode.position.x + 180, y: sourceNode.position.y + 40 } : { x: 200, y: 200 };

@@ -9,7 +9,13 @@ const config = {
   useSystemColorMode: false,
 }
 
-const theme = extendTheme({ config });
+const theme = extendTheme({
+  config,
+  fonts: {
+    heading: `'Segoe UI', system-ui, sans-serif`,
+    body: `'Segoe UI', system-ui, sans-serif`,
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <ChakraProvider theme={theme}>

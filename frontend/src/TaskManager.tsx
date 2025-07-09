@@ -46,8 +46,6 @@ export default function TaskManager() {
               }),
             onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
               updateNodeData(node.id, { status: e.target.value }),
-            onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
-              updateNodeData(node.id, { priority: e.target.value }),
             onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) =>
               updateNodeData(node.id, { label: e.target.value }),
             onDelete: () => deleteTask(node.id),

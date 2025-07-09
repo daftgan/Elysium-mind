@@ -6,8 +6,6 @@ import {
   HStack,
   Input,
   Checkbox,
-  Select,
-  Text,
 } from "@chakra-ui/react";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { Handle, Position } from "reactflow";
@@ -15,18 +13,16 @@ import { Handle, Position } from "reactflow";
 export interface TaskNodeData {
   label: string;
   status: string;
-  priority: string;
+  // priority supprimé
   hasIncoming: boolean;
   hasOutgoing: boolean;
   onCheck: () => void;
   onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onPriorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  // onPriorityChange supprimé
   onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete: () => void;
   onAddLinkedNode: () => void;
 }
-
-const priorityOptions = ["Basse", "Moyenne", "Haute"];
 
 /**
  * Nœud de tâche individuel affiché dans React Flow.
@@ -80,25 +76,56 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
       />
 
       {/* En-tête du nœud */}
-      <HStack spacing={2} alignItems="center">
+      <HStack spacing={1} alignItems="center">
         <Checkbox
           isChecked={data.status === "Terminée"}
+          colorScheme="whiteAlpha"
+          sx={{
+            ".chakra-checkbox__control": {
+              borderColor: "white",
+              borderWidth: "1px", // épaisseur fine
+              borderRadius: "lg", // arrondi plus prononcé
+              _hover: {
+                bg: "transparent",
+                borderColor: "white",
+              },
+            },
+            _checked: {
+              "& .chakra-checkbox__control": {
+                bg: "transparent", // pas de fond quand checked
+                borderColor: "white",
+                borderWidth: "1px",
+                borderRadius: "lg",
+                "--checkbox-color": "white", // variable Chakra pour la couleur de l’icône
+              },
+              "& svg": {
+                fill: "white",
+                stroke: "white",
+                color: "white",
+              },
+              "& .chakra-checkbox__icon": {
+                color: "white",
+              },
+            },
+            // neutraliser le hover même quand checked
+            ".chakra-checkbox__control[data-hover]": {
+              bg: "transparent",
+              borderColor: "white",
+            },
+          }}
+          size="lg" // plus grande – correspond mieux à la taille de la police
+          borderRadius="md" // coins plus arrondis
           onChange={data.onCheck}
-          colorScheme="teal"
-          size="sm"
         />
         <Input
           value={data.label}
           onChange={data.onLabelChange}
-          fontWeight="bold"
-          border="none"
-          bg="gray.900"
+          fontWeight="normal"
+          variant="unstyled" // supprime toute bordure par défaut
           color="gray.100"
-          borderRadius="md"
-          px={2}
+          px={1}
           py={1}
-          size="sm"
-          _focus={{ boxShadow: "outline" }}
+          fontSize="15.5px"
           textDecoration={data.status === "Terminée" ? "line-through" : "none"}
           opacity={data.status === "Terminée" ? 0.7 : 1}
         />
@@ -112,25 +139,7 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
         />
       </HStack>
 
-      {/* Sélection de la priorité */}
-      <HStack spacing={2} mt={2}>
-        <Text fontSize="xs" whiteSpace="nowrap">
-          Priorité :
-        </Text>
-        <Select
-          size="xs"
-          value={data.priority}
-          onChange={data.onPriorityChange}
-          bg="gray.900"
-          color="gray.100"
-        >
-          {priorityOptions.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </Select>
-      </HStack>
+      {/* La priorité a été retirée */}
     </Box>
   );
 });
