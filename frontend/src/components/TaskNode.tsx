@@ -29,7 +29,7 @@ export interface TaskNodeData {
  * Composant mémoïsé pour éviter les re-rendus inutiles.
  */
 const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
-  const bg = useColorModeValue("gray.800", "gray.700");
+  const bg = useColorModeValue("gray.900", "gray.800");
   const border = useColorModeValue("gray.600", "gray.500");
   const color = useColorModeValue("gray.100", "gray.100");
 
@@ -38,9 +38,9 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
       p={3}
       bg={bg}
       color={color}
-      borderRadius="md"
+      borderRadius="xl" // arrondi plus prononcé
       minW="180px"
-      boxShadow="md"
+      boxShadow="dark-lg" // ombre très marquée
       borderWidth="1px"
       borderColor={border}
       position="relative"

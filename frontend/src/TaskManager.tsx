@@ -68,6 +68,17 @@ export default function TaskManager() {
   // Fonction neutre mémoïsée pour éviter de recréer la référence à chaque render
   const handleNodesChange = useCallback(() => {}, []);
 
+  // Style par défaut des arêtes : bleu néon
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      style: {
+        stroke: "#00e6ff", // bleu néon
+        strokeWidth: 2,
+      },
+    }),
+    []
+  );
+
   return (
     <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
       {/* Barre d'en-tête */}
@@ -83,6 +94,7 @@ export default function TaskManager() {
           onEdgesChange={onEdgesChangeWithDelete}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
           maxZoom={1}
           minZoom={0.05}   /* autorise un zoom-out jusqu'à 5 % */
           fitView
