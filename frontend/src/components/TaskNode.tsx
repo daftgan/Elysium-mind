@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   useColorModeValue,
@@ -33,6 +33,24 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
   const border = useColorModeValue("gray.600", "gray.500");
   const color = useColorModeValue("gray.100", "gray.100");
 
+  // État local pour l’édition du label
+  const [localLabel, setLocalLabel] = useState(data.label);
+
+  // Synchronise si le label change depuis l’extérieur (undo, reload, etc.)
+  useEffect(() => {
+    setLocalLabel(data.label);
+  }, [data.label]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalLabel(e.target.value);
+  };
+
+  const handleBlur = () => {
+    if (localLabel !== data.label) {
+      data.onLabelChange({ target: { value: localLabel } } as any);
+    }
+  };
+
   return (
     <Box
       p={3}
@@ -40,7 +58,7 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
       color={color}
       borderRadius="xl" // arrondi plus prononcé
       minW="180px"
-      boxShadow="dark-lg" // ombre très marquée
+      boxShadow="0 2px 6px 0 #111" // ombre courte, nette, non diffuse
       borderWidth="1px"
       borderColor={border}
       position="relative"
@@ -118,15 +136,20 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
           onChange={data.onCheck}
         />
         <Input
-          value={data.label}
-          onChange={data.onLabelChange}
+          value={localLabel}
+          onChange={handleChange}
+          onBlur={handleBlur}
           fontWeight="normal"
           variant="unstyled" // supprime toute bordure par défaut
-          color="gray.100"
+          color={data.status === "Terminée" ? "gray.500" : "gray.100"}
           px={1}
           py={1}
           fontSize="15.5px"
           textDecoration={data.status === "Terminée" ? "line-through" : "none"}
+          sx={data.status === "Terminée" ? {
+            textDecorationColor: "white",
+            textDecorationThickness: "1px",
+          } : {}}
           opacity={data.status === "Terminée" ? 0.7 : 1}
         />
         <IconButton

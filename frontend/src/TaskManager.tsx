@@ -71,6 +71,7 @@ export default function TaskManager() {
   // Style par défaut des arêtes : bleu néon
   const defaultEdgeOptions = useMemo(
     () => ({
+      type: 'smoothstep',
       style: {
         stroke: "#00e6ff", // bleu néon
         strokeWidth: 2,
@@ -80,7 +81,28 @@ export default function TaskManager() {
   );
 
   return (
-    <Box w="100vw" h="100vh" bg="gray.900" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
+    <Box w="100vw" h="100vh" m={0} p={0} position="fixed" top={0} left={0} zIndex={0}>
+      {/* Fond multi-layers avec palette Midnight Blues */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        w="100vw"
+        h="100vh"
+        zIndex={0}
+        style={{
+          background: `
+            /* Noise overlay (2-3% opacity) */
+            url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
+            /* Radial gradients feutrés (15-20% opacity) */
+            radial-gradient(circle at 30% 40%, rgba(16, 3, 40, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 70% 60%, rgba(67, 0, 13, 0.12) 0%, transparent 60%),
+            /* Gradient principal - palette Chocolate Velvet */
+            linear-gradient(135deg, #010332 0%, #100328 25%, #29011C 50%, #43000D 75%, #530005 100%)
+          `,
+          backgroundBlendMode: "overlay, screen, normal",
+        }}
+      ></Box>
       {/* Barre d'en-tête */}
       <TaskHeader onAddTask={addTask} onAutoLayout={autoLayout} />
 
@@ -101,7 +123,7 @@ export default function TaskManager() {
         >
           {/* <MiniMap /> */}
           <Controls />
-          <Background gap={16} />
+          {/* <Background gap={16} /> */}
         </ReactFlow>
       </Box>
     </Box>
