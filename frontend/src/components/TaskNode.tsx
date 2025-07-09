@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
-  useColorModeValue,
   IconButton,
   HStack,
   Input,
@@ -14,12 +13,10 @@ import { themeConfig } from "../config/theme";
 export interface TaskNodeData {
   label: string;
   status: string;
-  // priority supprimé
   hasIncoming: boolean;
   hasOutgoing: boolean;
   onCheck: () => void;
   onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  // onPriorityChange supprimé
   onLabelChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete: () => void;
   onAddLinkedNode: () => void;
@@ -30,9 +27,12 @@ export interface TaskNodeData {
  * Composant mémoïsé pour éviter les re-rendus inutiles.
  */
 const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
+  // Constantes pour éviter les recalculs
   const bg = themeConfig.nodes.colors.background;
   const border = themeConfig.nodes.colors.border;
   const color = themeConfig.nodes.colors.text;
+  const isCompleted = data.status === "Terminée";
+  const textColor = isCompleted ? themeConfig.nodes.colors.textCompleted : themeConfig.nodes.colors.text;
 
   // État local pour l’édition du label
   const [localLabel, setLocalLabel] = useState(data.label);
@@ -42,19 +42,31 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
     setLocalLabel(data.label);
   }, [data.label]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalLabel(e.target.value);
-  };
-
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     if (localLabel !== data.label) {
-      data.onLabelChange({ target: { value: localLabel } } as any);
+      data.onLabelChange({ target: { value: localLabel } } as React.ChangeEvent<HTMLInputElement>);
     }
-  };
+  }, [localLabel, data.label, data.onLabelChange]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalLabel(e.target.value);
+  }, []);
+
+  const handleCheck = useCallback(() => {
+    data.onCheck();
+  }, [data.onCheck]);
+
+  const handleDelete = useCallback(() => {
+    data.onDelete();
+  }, [data.onDelete]);
+
+  const handleAddLinked = useCallback(() => {
+    data.onAddLinkedNode();
+  }, [data.onAddLinkedNode]);
 
   return (
     <Box
-      p={3}
+      p={1.5}
       bg={bg}
       color={color}
       borderRadius={themeConfig.nodes.borderRadius}
@@ -84,7 +96,7 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
         top="50%"
         transform="translateY(-50%)"
         zIndex={1}
-        onClick={data.onAddLinkedNode}
+        onClick={handleAddLinked}
         className="add-button"
         opacity={0}
         visibility="hidden"
@@ -95,13 +107,13 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
       />
 
       {/* En-tête du nœud */}
-      <HStack spacing={1} alignItems="center">
+      <HStack spacing={1} alignItems="center" py={0} pl={1}>
         <Checkbox
-          isChecked={data.status === "Terminée"}
+          isChecked={isCompleted}
           colorScheme="whiteAlpha"
           size={themeConfig.checkbox.size}
           borderRadius={themeConfig.checkbox.borderRadius}
-          onChange={data.onCheck}
+          onChange={handleCheck}
           sx={{
             ".chakra-checkbox__control": {
               borderColor: themeConfig.checkbox.color,
@@ -141,17 +153,17 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
           onChange={handleChange}
           onBlur={handleBlur}
           fontWeight="normal"
-          variant="unstyled" // supprime toute bordure par défaut
-          color={data.status === "Terminée" ? themeConfig.nodes.colors.textCompleted : themeConfig.nodes.colors.text}
+          variant="unstyled"
+          color={textColor}
           px={1}
           py={1}
           fontSize={themeConfig.nodes.fontSize}
-          textDecoration={data.status === "Terminée" ? "line-through" : "none"}
-          sx={data.status === "Terminée" ? {
+          textDecoration={isCompleted ? "line-through" : "none"}
+          sx={isCompleted ? {
             textDecorationColor: "white",
             textDecorationThickness: "1px",
           } : {}}
-          opacity={data.status === "Terminée" ? 0.7 : 1}
+          opacity={isCompleted ? 0.7 : 1}
         />
         <IconButton
           aria-label="Delete task"
@@ -159,11 +171,11 @@ const TaskNode: React.FC<{ data: TaskNodeData }> = React.memo(({ data }) => {
           size="xs"
           colorScheme="red"
           variant="ghost"
-          onClick={data.onDelete}
+          onClick={handleDelete}
         />
       </HStack>
 
-      {/* La priorité a été retirée */}
+      {/* Contenu du node */}
     </Box>
   );
 });

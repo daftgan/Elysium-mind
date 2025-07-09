@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useMemo } from "react";
 import ReactFlow, {
   Controls,
-  Background,
 } from "reactflow";
 import type { Node, ReactFlowInstance } from "reactflow";
 import "reactflow/dist/style.css";
