@@ -94,14 +94,12 @@ export default function TaskManager() {
           background: `
             /* Noise overlay (2-3% opacity) */
             url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
-            /* Fond organique multi-radial sans linéaire */
-            radial-gradient(circle at 15% 20%, #010332 0%, transparent 30%),
-            radial-gradient(ellipse at 75% 25%, #100328 0%, transparent 35%),
-            radial-gradient(circle at 45% 60%, #29011C 0%, transparent 40%),
-            radial-gradient(ellipse at 85% 70%, #43000D 0%, transparent 45%),
-            radial-gradient(circle at 25% 80%, #530005 0%, transparent 50%),
-            radial-gradient(ellipse at 60% 15%, rgba(16, 3, 40, 0.8) 0%, transparent 25%),
-            radial-gradient(circle at 90% 85%, rgba(67, 0, 13, 0.6) 0%, transparent 30%)
+            /* Fond organique avec 5 radial gradients */
+            radial-gradient(circle at 20% 30%, #010332 0%, transparent 40%),
+            radial-gradient(ellipse at 80% 40%, #100328 0%, transparent 45%),
+            radial-gradient(circle at 40% 70%, #29011C 0%, transparent 50%),
+            radial-gradient(ellipse at 75% 80%, #43000D 0%, transparent 35%),
+            radial-gradient(circle at 60% 20%, #530005 0%, transparent 30%)
           `,
           backgroundBlendMode: "overlay, screen, normal",
         }}
